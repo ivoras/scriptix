@@ -79,7 +79,10 @@ async function fileSize(path) {
 
 async function download(url, destination) {
   const existing = await fileSize(destination);
-  const response = await fetch(url, { redirect: 'follow' });
+  const response = await fetch(url, {
+    redirect: 'follow',
+    headers: { 'Accept-Encoding': 'identity' },
+  });
   if (!response.ok || !response.body) {
     throw new Error(`Download failed (${response.status}) for ${url}`);
   }
@@ -91,9 +94,14 @@ async function download(url, destination) {
   }
   await mkdir(dirname(destination), { recursive: true });
   const partial = `${destination}.partial`;
-  await pipeline(Readable.fromWeb(response.body), createWriteStream(partial));
+  try {
+    await pipeline(Readable.fromWeb(response.body), createWriteStream(partial));
+  } catch (error) {
+    await rm(partial, { force: true });
+    throw error;
+  }
   const written = await fileSize(partial);
-  if (expected > 0 && written !== expected) {
+  if (expected > 0 && written < expected) {
     await rm(partial, { force: true });
     throw new Error(`Short download for ${url}: wrote ${written} of ${expected} bytes`);
   }
