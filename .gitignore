@@ -141,3 +141,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Speech model downloaded by `npm run download-model` (ONNX weights, tokenizer, wasm)
+public/models/
