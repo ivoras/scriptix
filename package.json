@@ -1,0 +1,23 @@
+{
+  "name": "scriptix",
+  "private": true,
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fontsource/exo-2": "5.3.0",
+    "@fontsource/literata": "5.3.0",
+    "@huggingface/transformers": "4.3.0"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3",
+    "vite": "6.4.1",
+    "vitest": "3.2.4"
+  }
+}
