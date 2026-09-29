@@ -129,7 +129,8 @@ export class SpeechEngine {
       });
     };
     this.store.setSpeech({ model: 'downloading', progress: 0, message: 'Downloading speech model…' });
-    this.worker.postMessage({ type: 'load' });
+    const basePath = new URL(import.meta.env.BASE_URL, window.location.href).pathname;
+    this.worker.postMessage({ type: 'load', basePath });
   }
 
   setMode(next: SpeechMode): void {

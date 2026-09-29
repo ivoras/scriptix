@@ -23,6 +23,14 @@ npm run preview
 
 `npm run build` writes the static site to `dist/`. Serve that folder with any static file server. The dev server and `npm run preview` send the cross-origin isolation headers the speech runtime expects.
 
+Ship the speech model with the site:
+
+```bash
+npm run download-model
+```
+
+That saves the ONNX weights, tokenizer, and WebGPU runtime the app already fetches into `public/models/` (gitignored). A static build serves them from the same origin, and the app uses those files when they are all there. Otherwise it still downloads from the network and caches the model in the browser. The weights are CC-BY-4.0. The script writes `LICENSE` next to them; keep that file if you redistribute the download.
+
 ## Write
 
 - **Tab** turns listening on and off. The Listen button does the same.

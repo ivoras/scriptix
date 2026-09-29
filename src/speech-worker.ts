@@ -1,13 +1,18 @@
 import { env, pipeline, type ProgressInfo } from '@huggingface/transformers';
-
-const MODEL_ID = 'onnx-community/parakeet-ctc-0.6b-ONNX';
+import {
+  SPEECH_MODEL_DEVICE,
+  SPEECH_MODEL_DTYPE,
+  SPEECH_MODEL_ID,
+  localSpeechAvailability,
+  speechAssetPaths,
+} from './speech-model';
 
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 env.useFSCache = false;
 
 type Inbound =
-  | { type: 'load' }
+  | { type: 'load'; basePath?: string }
   | { type: 'transcribe'; id: number; audio: Float32Array };
 
 let transcriber: Awaited<ReturnType<typeof pipeline<'automatic-speech-recognition'>>> | null = null;
@@ -19,7 +24,7 @@ function post(message: Record<string, unknown>): void {
 self.onmessage = (event: MessageEvent<Inbound>) => {
   const message = event.data;
   if (message.type === 'load') {
-    void loadModel();
+    void loadModel(message.basePath ?? '/');
     return;
   }
   if (message.type === 'transcribe') {
@@ -27,12 +32,31 @@ self.onmessage = (event: MessageEvent<Inbound>) => {
   }
 };
 
-async function loadModel(): Promise<void> {
+/**
+ * Prefer the files from `npm run download-model` when every one of them is
+ * already on this origin. Missing files keep the network path: Hugging Face
+ * for the model (browser Cache API) and jsDelivr for the wasm runtime.
+ */
+async function useLocalAssets(basePath: string): Promise<void> {
+  const available = await localSpeechAvailability(basePath);
+  const paths = speechAssetPaths(basePath);
+  if (available.model) {
+    env.allowLocalModels = true;
+    env.localModelPath = paths.localModelPath;
+    env.useBrowserCache = false;
+  }
+  if (available.wasm && env.backends.onnx.wasm) {
+    env.backends.onnx.wasm.wasmPaths = paths.wasm;
+  }
+}
+
+async function loadModel(basePath: string): Promise<void> {
   try {
+    await useLocalAssets(basePath);
     post({ type: 'status', message: 'Downloading speech model…' });
-    transcriber = await pipeline('automatic-speech-recognition', MODEL_ID, {
-      device: 'webgpu',
-      dtype: 'q4f16',
+    transcriber = await pipeline('automatic-speech-recognition', SPEECH_MODEL_ID, {
+      device: SPEECH_MODEL_DEVICE,
+      dtype: SPEECH_MODEL_DTYPE,
       progress_callback: (info: ProgressInfo) => {
         if (info.status === 'progress_total') {
           post({
